@@ -126,3 +126,184 @@ int main(void) {
 
     return 0;
 }
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define N 10000
+
+long long comparisons = 0;
+int maxDepth = 0;
+
+void swap(int *a, int *b) {
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
+
+int medianOfThree(int a[], int low, int high) {
+    int mid = low + (high - low) / 2;
+    int x = a[low], y = a[mid], z = a[high];
+
+    comparisons++;
+    if (x > y) {
+        comparisons++;
+        if (y > z) return mid;
+        comparisons++;
+        if (x > z) return high;
+        return low;
+    }
+
+    comparisons++;
+    if (x > z) return low;
+    comparisons++;
+    if (y > z) return high;
+    return mid;
+}
+
+int partition(int a[], int low, int high) {
+    int pivotIndex = medianOfThree(a, low, high);
+    swap(&a[pivotIndex], &a[high]);
+
+    int pivot = a[high];
+    int i = low - 1;
+
+    for (int j = low; j < high; j++) {
+        comparisons++;
+        if (a[j] <= pivot) {
+            i++;
+            swap(&a[i], &a[j]);
+        }
+    }
+
+    swap(&a[i + 1], &a[high]);
+    return i + 1;
+}
+
+void quickSort(int a[], int low, int high, int depth) {
+    while (low < high) {
+        if (depth > maxDepth)
+            maxDepth = depth;
+
+        int p = partition(a, low, high);
+
+        if (p - low < high - p) {
+            quickSort(a, low, p - 1, depth + 1);
+            low = p + 1;
+        } else {
+            quickSort(a, p + 1, high, depth + 1);
+            high = p - 1;
+        }
+    }
+}
+
+void test(char *label, int type) {
+    int *a = malloc(N * sizeof(int));
+
+    if (a == NULL) {
+        printf("Memory allocation failed\n");
+        return;
+    }
+
+    for (int i = 0; i < N; i++) {
+        if (type == 0)
+            a[i] = rand() % 100000;
+        else if (type == 1)
+            a[i] = i;
+        else
+            a[i] = N - i;
+    }
+
+    comparisons = 0;
+    maxDepth = 0;
+
+    quickSort(a, 0, N - 1, 1);
+
+    int sorted = 1;
+    for (int i = 1; i < N; i++) {
+        if (a[i - 1] > a[i]) {
+            sorted = 0;
+            break;
+        }
+    }
+
+    printf("%s\n", label);
+    printf("Comparisons: %lld\n", comparisons);
+    printf("Maximum recursion depth: %d\n", maxDepth);
+    printf("Sorting successful: %s\n\n", sorted ? "Yes" : "No");
+
+    free(a);
+}
+
+int main(void) {
+    srand(1);
+
+    test("Random data:", 0);
+    test("Sorted data:", 1);
+    test("Reverse sorted data:", 2);
+
+    return 0;
+}
+
+
+
+
+
+
+#include <stdio.h>
+
+#define N 10
+
+void merge(int a[], int left, int mid, int right) {
+    int temp[N];
+    int i = left;
+    int j = mid + 1;
+    int k = left;
+
+    while (i <= mid && j <= right) {
+        if (a[i] <= a[j]) {
+            temp[k++] = a[i++];
+        } else {
+            temp[k++] = a[j++];
+        }
+    }
+
+    while (i <= mid)
+        temp[k++] = a[i++];
+
+    while (j <= right)
+        temp[k++] = a[j++];
+
+    for (i = left; i <= right; i++)
+        a[i] = temp[i];
+}
+
+void mergeSort(int a[], int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        mergeSort(a, left, mid);
+        mergeSort(a, mid + 1, right);
+        merge(a, left, mid, right);
+    }
+}
+
+int main(void) {
+    int marks[N] = {78, 45, 90, 32, 67, 45, 88, 23, 56, 78};
+
+    printf("Original marks:\n");
+    for (int i = 0; i < N; i++)
+        printf("%d ", marks[i]);
+
+    mergeSort(marks, 0, N - 1);
+
+    printf("\n\nSorted marks:\n");
+    for (int i = 0; i < N; i++)
+        printf("%d ", marks[i]);
+
+    printf("\n");
+    return 0;
+}

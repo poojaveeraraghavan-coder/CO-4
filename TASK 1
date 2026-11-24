@@ -1,0 +1,89 @@
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#define N 100000
+#define OLD_SIZE 1000
+#define NEW_SIZE 131071
+
+unsigned int poor_hash(const char *reg)
+{
+    return (reg[0] + reg[1]) % OLD_SIZE;
+}
+
+unsigned int good_hash(const char *reg)
+{
+    uint32_t h = 0;
+
+    while (*reg)
+    {
+        h = h * 31u + (unsigned char)*reg;
+        reg++;
+    }
+
+    return h % NEW_SIZE;
+}
+
+void analyse(unsigned long table[], int size, const char *label)
+{
+    unsigned long longest = 0;
+    unsigned long nonempty = 0;
+    unsigned long total = 0;
+
+    for (int i = 0; i < size; i++)
+    {
+        if (table[i] > 0)
+        {
+            nonempty++;
+            total += table[i];
+
+            if (table[i] > longest)
+                longest = table[i];
+        }
+    }
+
+    printf("\n%s\n", label);
+    printf("Table size: %d\n", size);
+    printf("Total registrations: %d\n", N);
+    printf("Non-empty buckets: %lu\n", nonempty);
+    printf("Longest chain: %lu\n", longest);
+    printf("Average non-empty chain length: %.2f\n",
+           (double)total / nonempty);
+}
+
+int main(void)
+{
+    unsigned long *old_table =
+        calloc(OLD_SIZE, sizeof(unsigned long));
+
+    unsigned long *new_table =
+        calloc(NEW_SIZE, sizeof(unsigned long));
+
+    if (old_table == NULL || new_table == NULL)
+    {
+        printf("Memory allocation failed.\n");
+        free(old_table);
+        free(new_table);
+        return 1;
+    }
+
+    char reg[20];
+
+    for (int i = 0; i < N; i++)
+    {
+        snprintf(reg, sizeof(reg), "TN%02dAB%04d",
+                 i / 10000, i % 10000);
+
+        old_table[poor_hash(reg)]++;
+        new_table[good_hash(reg)]++;
+    }
+
+    analyse(old_table, OLD_SIZE, "POOR HASH FUNCTION");
+    analyse(new_table, NEW_SIZE, "IMPROVED HASH FUNCTION");
+
+    free(old_table);
+    free(new_table);
+
+    return 0;
+}

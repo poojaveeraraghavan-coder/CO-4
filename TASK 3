@@ -1,117 +1,96 @@
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#define BUCKETS 7
+#define MAX 32
 
-typedef struct Member {
-    char id[12];
-    char name[20];
-    struct Member *next;
-} Member;
+typedef struct {
+    int severity;
+    int patient;
+} Case;
 
-Member *table[BUCKETS];
+Case heap[MAX];
+int size = 0;
 
-unsigned hash(const char *s)
+void swap(Case *a, Case *b)
 {
-    unsigned h = 0;
-
-    while (*s)
-        h = h * 31 + (unsigned char)*s++;
-
-    return h % BUCKETS;
+    Case t = *a;
+    *a = *b;
+    *b = t;
 }
 
-void put(const char *id, const char *name)
+void push(int severity, int patient)
 {
-    Member *newMember = malloc(sizeof(Member));
+    if (size == MAX)
+        return;
 
-    if (newMember == NULL)
+    heap[size] = (Case){severity, patient};
+
+    int i = size++;
+
+    /* TODO 1: Sift up */
+    while (i > 0)
     {
-        printf("Memory allocation failed\n");
-        exit(1);
+        int parent = (i - 1) / 2;
+
+        if (heap[parent].severity >= heap[i].severity)
+            break;
+
+        swap(&heap[parent], &heap[i]);
+        i = parent;
     }
-
-    strcpy(newMember->id, id);
-    strcpy(newMember->name, name);
-
-    unsigned index = hash(id);
-
-    newMember->next = table[index];
-    table[index] = newMember;
 }
 
-const char *get(const char *id, int *probes)
+Case pop(void)
 {
-    *probes = 0;
+    Case top = heap[0];
 
-    unsigned index = hash(id);
-    Member *current = table[index];
+    heap[0] = heap[--size];
 
-    while (current != NULL)
+    int i = 0;
+
+    /* TODO 2: Sift down */
+    while (1)
     {
-        (*probes)++;
+        int left = 2 * i + 1;
+        int right = 2 * i + 2;
+        int largest = i;
 
-        if (strcmp(current->id, id) == 0)
-            return current->name;
+        if (left < size &&
+            heap[left].severity > heap[largest].severity)
+            largest = left;
 
-        current = current->next;
+        if (right < size &&
+            heap[right].severity > heap[largest].severity)
+            largest = right;
+
+        if (largest == i)
+            break;
+
+        swap(&heap[i], &heap[largest]);
+        i = largest;
     }
 
-    return NULL;
+    return top;
 }
 
 int main(void)
 {
-    const char *ids[] = {
-        "CSE1043", "ECE2210", "MEC3307",
-        "CSE1044", "BME4120", "CIV5009"
-    };
+    push(3, 101);
+    push(9, 102);
+    push(5, 103);
+    push(7, 104);
+    push(1, 105);
+    push(8, 106);
 
-    const char *names[] = {
-        "Kavya", "Arjun", "Fathima",
-        "Rahul", "Deepa", "Manoj"
-    };
+    printf("Patient treatment order:\n");
 
-    for (int i = 0; i < 6; i++)
-        put(ids[i], names[i]);
-
-    int probes;
-    const char *result;
-
-    result = get("CSE1043", &probes);
-
-    if (result != NULL)
-        printf("CSE1043 -> %s (%d probes)\n", result, probes);
-    else
-        printf("CSE1043 -> not found (%d probes)\n", probes);
-
-    result = get("CSE1044", &probes);
-
-    if (result != NULL)
-        printf("CSE1044 -> %s (%d probes)\n", result, probes);
-    else
-        printf("CSE1044 -> not found (%d probes)\n", probes);
-
-    result = get("CSE9999", &probes);
-
-    if (result != NULL)
-        printf("CSE9999 -> %s (%d probes)\n", result, probes);
-    else
-        printf("CSE9999 -> not found (%d probes)\n", probes);
-
-    for (int i = 0; i < BUCKETS; i++)
+    while (size > 0)
     {
-        Member *current = table[i];
-
-        while (current != NULL)
-        {
-            Member *temp = current;
-            current = current->next;
-            free(temp);
-        }
+        Case p = pop();
+        printf("P%d(%d) ", p.patient, p.severity);
     }
+
+    printf("\n");
 
     return 0;
 }

@@ -1,0 +1,117 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define BUCKETS 7
+
+typedef struct Member {
+    char id[12];
+    char name[20];
+    struct Member *next;
+} Member;
+
+Member *table[BUCKETS];
+
+unsigned hash(const char *s)
+{
+    unsigned h = 0;
+
+    while (*s)
+        h = h * 31 + (unsigned char)*s++;
+
+    return h % BUCKETS;
+}
+
+void put(const char *id, const char *name)
+{
+    Member *newMember = malloc(sizeof(Member));
+
+    if (newMember == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+
+    strcpy(newMember->id, id);
+    strcpy(newMember->name, name);
+
+    unsigned index = hash(id);
+
+    newMember->next = table[index];
+    table[index] = newMember;
+}
+
+const char *get(const char *id, int *probes)
+{
+    *probes = 0;
+
+    unsigned index = hash(id);
+    Member *current = table[index];
+
+    while (current != NULL)
+    {
+        (*probes)++;
+
+        if (strcmp(current->id, id) == 0)
+            return current->name;
+
+        current = current->next;
+    }
+
+    return NULL;
+}
+
+int main(void)
+{
+    const char *ids[] = {
+        "CSE1043", "ECE2210", "MEC3307",
+        "CSE1044", "BME4120", "CIV5009"
+    };
+
+    const char *names[] = {
+        "Kavya", "Arjun", "Fathima",
+        "Rahul", "Deepa", "Manoj"
+    };
+
+    for (int i = 0; i < 6; i++)
+        put(ids[i], names[i]);
+
+    int probes;
+    const char *result;
+
+    result = get("CSE1043", &probes);
+
+    if (result != NULL)
+        printf("CSE1043 -> %s (%d probes)\n", result, probes);
+    else
+        printf("CSE1043 -> not found (%d probes)\n", probes);
+
+    result = get("CSE1044", &probes);
+
+    if (result != NULL)
+        printf("CSE1044 -> %s (%d probes)\n", result, probes);
+    else
+        printf("CSE1044 -> not found (%d probes)\n", probes);
+
+    result = get("CSE9999", &probes);
+
+    if (result != NULL)
+        printf("CSE9999 -> %s (%d probes)\n", result, probes);
+    else
+        printf("CSE9999 -> not found (%d probes)\n", probes);
+
+    for (int i = 0; i < BUCKETS; i++)
+    {
+        Member *current = table[i];
+
+        while (current != NULL)
+        {
+            Member *temp = current;
+            current = current->next;
+            free(temp);
+        }
+    }
+
+    return 0;
+}
